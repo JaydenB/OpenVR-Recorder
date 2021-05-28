@@ -146,7 +146,7 @@ class FileBrowserWidget(QtWidgets.QWidget):
         self.setLayout(self.main_layout)
 
         self.pb_browse = QtWidgets.QPushButton()
-        self.le_filepath = QtWidgets.QLineEdit("C:/tmp")
+        self.le_filepath = QtWidgets.QLineEdit("C:/")
 
         self.pb_browse.setIcon(self.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_DirIcon))
         self.le_filepath.setReadOnly(True)
@@ -161,7 +161,7 @@ class FileBrowserWidget(QtWidgets.QWidget):
 
     def clicked_browse(self):
         file_dialog = QtWidgets.QFileDialog()
-        file_dialog.setDirectory("C:/tmp")
+        file_dialog.setDirectory("C:/")
         file_dialog.setFileMode(QtWidgets.QFileDialog.FileMode.DirectoryOnly)
         if file_dialog.exec_():
             self.selected_folder(file_dialog.selectedFiles())

@@ -1,14 +1,16 @@
-from PyQt5 import QtWidgets, QtGui
-import triad_openvr
+from PyQt5 import QtWidgets, QtGui, QtCore
 import os
 
 import ui.recorder_widget as rcw
 import device
 import settings
 import recorder
+import openvr as vr
 
 
 class RecorderApplication(QtWidgets.QApplication):
+    close_connection = QtCore.pyqtSignal()
+
     def __init__(self):
         QtWidgets.QApplication.__init__(self, [])
         self.setApplicationName("OpenVR Recorder")
@@ -21,6 +23,24 @@ class RecorderApplication(QtWidgets.QApplication):
 
         self.connected = False
         self.recording = False
+
+        # --------------------------------------------------------
+        #   Threaded listening
+
+        self.listener_thread = QtCore.QThread()
+        self.listener_worker = vr.ListenerWorker()
+
+        self.close_connection.connect(self.listener_worker.close)
+        self.listener_worker.moveToThread(self.listener_thread)
+
+        self.listener_worker.finished.connect(self.listener_thread.quit)
+        self.listener_worker.finished.connect(self.listener_worker.deleteLater)
+        self.listener_thread.finished.connect(self.listener_thread.deleteLater)
+
+        self.listener_thread.started.connect(self.listener_worker.start)
+        self.listener_thread.finished.connect(self.listener_worker.close)
+
+        # --------------------------------------------------------
 
         self.recorder = recorder.Recorder()
 
@@ -75,14 +95,17 @@ class RecorderApplication(QtWidgets.QApplication):
         self.connected = True
         self.ui_widget.update_connected_icon(self.connected)
 
-        # self._vr = triad_openvr.triad_openvr()
         # self.create_devices(self._vr.devices)
+
+        self.listener_thread.start()
 
         print("OpenVR Connected!")
 
     def openvr_disconnect(self):
         self.connected = False
         self.ui_widget.update_connected_icon(self.connected)
+
+        self.close_connection.emit()
 
         self.remove_devices()
         self._vr = None
@@ -122,27 +145,6 @@ class RecorderApplication(QtWidgets.QApplication):
         self._tracked_devices = []
 
 
-# 250 Hz refresh rate of data
-refresh_rate = 250
-device_name = "tracker_1"
-
-
 if __name__ == "__main__":
-    # interval = 1/refresh_rate
-    #
-    # v = vr.triad_openvr()
-    # v.print_discovered_objects()
-    #
-    # while True:
-    #     start = time.time()
-    #     text = ""
-    #     for pose in v.devices[device_name].get_pose_euler():
-    #         text += "%s.4f" % pose
-    #         text += " "
-    #     print("\r" + text, end="")
-    #     sleep_time = interval-(time.time()-start)
-    #     if sleep_time > 0:
-    #         time.sleep(sleep_time)
-
     app = RecorderApplication()
     app.exec_()

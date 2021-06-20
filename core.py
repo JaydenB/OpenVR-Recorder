@@ -5,11 +5,15 @@ import ui.recorder_widget as rcw
 import device
 import settings
 import recorder
-import openvr as vr
+import openvr_listener as vr
 
 
 class RecorderApplication(QtWidgets.QApplication):
     close_connection = QtCore.pyqtSignal()
+    open_connection = QtCore.pyqtSignal()
+
+    start_recording = QtCore.pyqtSignal()
+    stop_recording = QtCore.pyqtSignal()
 
     def __init__(self):
         QtWidgets.QApplication.__init__(self, [])
@@ -30,7 +34,8 @@ class RecorderApplication(QtWidgets.QApplication):
         self.listener_thread = QtCore.QThread()
         self.listener_worker = vr.ListenerWorker()
 
-        self.close_connection.connect(self.listener_worker.close)
+        self.open_connection.connect(self.listener_worker.start_active)
+        self.close_connection.connect(self.listener_worker.close_active)
         self.listener_worker.moveToThread(self.listener_thread)
 
         self.listener_worker.finished.connect(self.listener_thread.quit)
@@ -38,7 +43,12 @@ class RecorderApplication(QtWidgets.QApplication):
         self.listener_thread.finished.connect(self.listener_thread.deleteLater)
 
         self.listener_thread.started.connect(self.listener_worker.start)
-        self.listener_thread.finished.connect(self.listener_worker.close)
+        self.listener_thread.finished.connect(self.listener_worker.kill)
+
+        self.listener_worker.obtained_devices.connect(self.create_devices)
+        self.listener_worker.obtained_sample.connect(self.obtained_sample)
+
+        self.listener_thread.start()
 
         # --------------------------------------------------------
 
@@ -63,21 +73,19 @@ class RecorderApplication(QtWidgets.QApplication):
                 self.recording_start()
 
     def recording_start(self):
-        # if self._vr is None:
-        #     # @TODO: Not connected properly
-        #     return
         self.recording = True
         self.ui_widget.update_record_icon(self.recording)
 
         print("Starting Recording...")
-        self.recorder.start_recording()
+        self.start_recording.emit()
 
     def recording_stop(self):
         self.recording = False
         self.ui_widget.update_record_icon(self.recording)
 
-        print("Ending Recording!")
-        self.recorder.stop_recording()
+        print("Ending Recording!\n")
+        self.stop_recording.emit()
+        self.recorder.end_recording(self.get_slate_data())
 
     # -----------------------------------------
     #   OpenVR Connection
@@ -96,8 +104,7 @@ class RecorderApplication(QtWidgets.QApplication):
         self.ui_widget.update_connected_icon(self.connected)
 
         # self.create_devices(self._vr.devices)
-
-        self.listener_thread.start()
+        self.open_connection.emit()
 
         print("OpenVR Connected!")
 
@@ -133,16 +140,32 @@ class RecorderApplication(QtWidgets.QApplication):
     # -----------------------------------------------------------
 
     def create_devices(self, devices):
-        if self._vr is not None:
-            self._vr.print_discovered_objects()
-            print(devices)
-            for d in devices.keys():
-                new_device = device.TrackedDevice(self, d)
-                self._tracked_devices.append(new_device)
+        print("Devices: %s" % list(devices.keys()))
+        for d in devices.keys():
+            print("Creating new Device for '%s'" % d)
+            new_device = device.TrackedDevice(self, d)
+            self._tracked_devices.append(new_device)
 
     def remove_devices(self):
         self.ui_widget.clear_devices()
         self._tracked_devices = []
+
+    def obtained_sample(self, sample):
+        # print("Sample: %s" % sample)
+        recorded_sample = dict()
+        recorded_sample["time"] = sample.get("time", 0.0)
+        for sample_device in sample.keys():
+            for d in self._tracked_devices:
+                if d.name == sample_device:
+                    pose = sample.get(sample_device, [0, 0, 0, 0, 0, 0])
+                    d.update_pose(pose)
+                    if self.recording:
+                        recorded_sample[d.name] = pose
+        if self.recording:
+            self.recorder.add_sample(recorded_sample)
+
+    def get_slate_data(self):
+        return [self.ui_widget.le_slate.text(), self.ui_widget.le_setup.text(), self.ui_widget.sb_take.value()]
 
 
 if __name__ == "__main__":

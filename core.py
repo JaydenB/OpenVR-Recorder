@@ -80,12 +80,17 @@ class RecorderApplication(QtWidgets.QApplication):
         self.start_recording.emit()
 
     def recording_stop(self):
+        print("Ending Recording!\n")
         self.recording = False
         self.ui_widget.update_record_icon(self.recording)
 
-        print("Ending Recording!\n")
-        self.stop_recording.emit()
-        self.recorder.end_recording(self.get_slate_data())
+        slate_data = self.get_slate_data()
+        file_path = self.create_filepath()
+
+        # self.stop_recording.emit()
+        self.recorder.end_recording(file_path, slate_data)
+
+        # self.ui.sb_take.setValue(slate_data[2]+1)
 
     # -----------------------------------------
     #   OpenVR Connection
@@ -115,7 +120,7 @@ class RecorderApplication(QtWidgets.QApplication):
         self.close_connection.emit()
 
         self.remove_devices()
-        self._vr = None
+        # self._vr = None
         print("OpenVR Disconnected!")
 
     # -----------------------------------------
@@ -124,10 +129,10 @@ class RecorderApplication(QtWidgets.QApplication):
 
     def create_filepath(self):
         return os.path.join(*[
-            self.ui_widget.file_browser.le_filepath.text,
-            self.ui_widget.le_slate.text,
-            self.ui_widget.le_setup.text,
-            str(self.ui_widget.sb_take.value)])
+            self.ui_widget.file_browser.le_filepath.text(),
+            self.ui_widget.le_slate.text(),
+            self.ui_widget.le_setup.text(),
+            str(self.ui_widget.sb_take.value())])
 
     def get_takes(self):
         # @TODO: Get all recorded takes at current filepath in slate/setup/take order
@@ -165,7 +170,9 @@ class RecorderApplication(QtWidgets.QApplication):
             self.recorder.add_sample(recorded_sample)
 
     def get_slate_data(self):
-        return [self.ui_widget.le_slate.text(), self.ui_widget.le_setup.text(), self.ui_widget.sb_take.value()]
+        return [self.ui_widget.le_slate.text(),
+                self.ui_widget.le_setup.text(),
+                self.ui_widget.sb_take.value()]
 
 
 if __name__ == "__main__":

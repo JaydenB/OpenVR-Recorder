@@ -2,6 +2,9 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 import os
 
 
+DEFAULT_FILEPATH = "C:/recordings/steamvr"
+
+
 class RecorderWidget(QtWidgets.QWidget):
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
@@ -124,18 +127,22 @@ class RecorderWidget(QtWidgets.QWidget):
             self.pb_connection.setIcon(QtGui.QIcon("./ui/icons/icon_disconnected.png"))
 
     def add_device(self, device):
-        new_row = self.tb_devices.rowCount() + 1
-        self.tb_devices.insertRow(new_row)
-        self.tb_devices.setItem(new_row, 0, device)
+        print("Adding '%s' to table_widget for devices!" % device)
+        # new_row =  + 1
+        self.tb_devices.insertRow(self.tb_devices.rowCount())
+        # print("newRow: %s" % new_row)
+        self.tb_devices.setItem(self.tb_devices.rowCount()-1, 0, device)
+        print("device inserted.")
+        return self.tb_devices.rowCount()-1
 
     def clear_devices(self):
         # @TODO: Loop through all Table Widget items within self.tb_devices and remove
-        pass
+        self.tb_devices.setRowCount(0)
 
 
 class TrackedDeviceWidget(QtWidgets.QTableWidgetItem):
-    def __init__(self):
-        QtWidgets.QTableWidgetItem.__init__(self)
+    def __init__(self, name):
+        QtWidgets.QTableWidgetItem.__init__(self, name)
 
 
 class FileBrowserWidget(QtWidgets.QWidget):
@@ -146,7 +153,7 @@ class FileBrowserWidget(QtWidgets.QWidget):
         self.setLayout(self.main_layout)
 
         self.pb_browse = QtWidgets.QPushButton()
-        self.le_filepath = QtWidgets.QLineEdit("C:/")
+        self.le_filepath = QtWidgets.QLineEdit(DEFAULT_FILEPATH)
 
         self.pb_browse.setIcon(self.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_DirIcon))
         self.le_filepath.setReadOnly(True)

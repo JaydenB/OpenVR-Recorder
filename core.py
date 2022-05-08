@@ -6,6 +6,7 @@ import device
 import settings
 import recorder
 import openvr_listener as vr
+from datetime import datetime
 
 
 class RecorderApplication(QtWidgets.QApplication):
@@ -14,6 +15,7 @@ class RecorderApplication(QtWidgets.QApplication):
 
     start_recording = QtCore.pyqtSignal()
     stop_recording = QtCore.pyqtSignal()
+    capture_calibration = QtCore.pyqtSignal()
 
     def __init__(self):
         QtWidgets.QApplication.__init__(self, [])
@@ -34,6 +36,7 @@ class RecorderApplication(QtWidgets.QApplication):
         self.listener_thread = QtCore.QThread()
         self.listener_worker = vr.ListenerWorker()
 
+        self.capture_calibration.connect(self.listener_worker.capture_calibration)
         self.open_connection.connect(self.listener_worker.start_active)
         self.close_connection.connect(self.listener_worker.close_active)
         self.listener_worker.moveToThread(self.listener_thread)
@@ -58,8 +61,16 @@ class RecorderApplication(QtWidgets.QApplication):
         self._tracked_devices = []
 
         # Connect UI Signals
+        self.ui_widget.pb_calibrate.clicked.connect(self.calibrate_volume)
         self.ui_widget.pb_record.clicked.connect(self.recording_toggle)
         self.ui_widget.pb_connection.clicked.connect(self.connection_toggle)
+
+    # -----------------------------------------
+    #   Calibration
+    # -----------------------------------------
+
+    def calibrate_volume(self):
+        self.capture_calibration.emit()
 
     # -----------------------------------------
     #   Recording
@@ -88,9 +99,10 @@ class RecorderApplication(QtWidgets.QApplication):
         file_path = self.create_filepath()
 
         # self.stop_recording.emit()
-        self.recorder.end_recording(file_path, slate_data)
+        self.recorder.end_recording(file_path, slate_data,
+                                    self.listener_worker.root.tolist())
 
-        # self.ui.sb_take.setValue(slate_data[2]+1)
+        self.ui_widget.sb_take.setValue(slate_data[2]+1)
 
     # -----------------------------------------
     #   OpenVR Connection
@@ -128,11 +140,10 @@ class RecorderApplication(QtWidgets.QApplication):
     # -----------------------------------------
 
     def create_filepath(self):
-        return os.path.join(*[
-            self.ui_widget.file_browser.le_filepath.text(),
-            self.ui_widget.le_slate.text(),
-            self.ui_widget.le_setup.text(),
-            str(self.ui_widget.sb_take.value())])
+        # date = datetime.now().date()
+        # return f"{self.ui_widget.file_browser.le_filepath.text()}/" \
+        #        f"{date.year}_{date.month}_{date.day}"
+        return self.ui_widget.file_browser.le_filepath.text()
 
     def get_takes(self):
         # @TODO: Get all recorded takes at current filepath in slate/setup/take order

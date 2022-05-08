@@ -20,6 +20,7 @@ class RecorderWidget(QtWidgets.QWidget):
 
         layout_connection = QtWidgets.QHBoxLayout()
 
+        self.pb_calibrate = QtWidgets.QPushButton("CALIB")
         self.pb_record = QtWidgets.QPushButton()
         self.pb_connection = QtWidgets.QPushButton()
 
@@ -29,6 +30,9 @@ class RecorderWidget(QtWidgets.QWidget):
         self.pb_connection.setIconSize(QtCore.QSize(40, 40))
 
         # Stylesheets
+        self.pb_calibrate.setStyleSheet("""QPushButton:pressed {
+                            background-color: rgb(180, 180, 180);
+                        }""")
         self.pb_record.setStyleSheet("""QPushButton:pressed {
                     background-color: rgb(180, 180, 180);
                 }""")
@@ -36,9 +40,11 @@ class RecorderWidget(QtWidgets.QWidget):
                     background-color: rgb(180, 180, 180);
                 }""")
 
+        self.pb_calibrate.setFixedSize(50, 50)
         self.pb_record.setFixedSize(50, 50)
         self.pb_connection.setFixedSize(50, 50)
 
+        layout_connection.addWidget(self.pb_calibrate)
         layout_connection.addWidget(self.pb_connection)
         layout_connection.addWidget(self.pb_record)
 

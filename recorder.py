@@ -1,34 +1,51 @@
-import numpy
-import sys
+import json
+from datetime import datetime
+
+
+def save_dict_to_file(d: dict, file_path: str) -> None:
+    try:
+        with open(file_path, 'w') as _file:
+            _file.write(json.dumps(d))
+        print(f"Saving dict data within '{file_path}")
+    except Exception as e:
+        print(f"Exception '{e}' on saving Data to '{file_path}'")
 
 
 class Recorder(object):
     def __init__(self):
         self.buffer = []
 
-    def end_recording(self, file_path, slate_data):
+    def end_recording(self, file_path, slate_data, calib_point):
+        print("Ending Recording...")
+        print(f"\tSample Count: {len(self.buffer)} | "
+              f"Length: {round(self.buffer[-1]['time']-self.buffer[0]['time'], 2)} seconds | "
+              f"Avg: {len(self.buffer)/round(self.buffer[-1]['time']-self.buffer[0]['time'], 2)} samples per second")
 
-        slate = "%s.%s.tk%s" % (slate_data[0], slate_data[1], slate_data[2])
-        print("File path: %s" % file_path)
-        print(f"File Path: {file_path}")
-        print("Slate: %s" % slate)
-        print("Sample Count: %s, Length: %s seconds, Avg: %s per second" % (
-            len(self.buffer),
-            round(self.buffer[-1]["time"]-self.buffer[0]["time"], 2),
-            len(self.buffer)/round(self.buffer[-1]["time"]-self.buffer[0]["time"], 2)
-        ))
-        print("Disk Size: %sMB" % round(sys.getsizeof(self.buffer)/1048576, 4))
-
-        print("")
-
+        recorded_data = dict()
+        recorded_data['name'] = f"{slate_data[0]}.{slate_data[1]}.tk{slate_data[2]}"
+        recorded_data['slate'] = slate_data[0]
+        recorded_data['setup'] = slate_data[1]
+        recorded_data['take'] = int(slate_data[2])
+        recorded_data['date'] = str(datetime.now())
+        recorded_data['start_time'] = str(self.buffer[0]['time'])
+        recorded_data['end_time'] = str(self.buffer[-1]['time'])
+        recorded_data['calib_point'] = calib_point
+        recorded_data['samples_count'] = len(self.buffer)
+        recorded_data['samples'] = dict()
         for sample in self.buffer:
-            print(sample.get('tracker_1')['matrix'])
-            # print(f"[{round(sample.get('time')-self.buffer[0].get('time'),2)}]"
-            #       f" {sample.get('tracker_1').get('matrix')}")
-        print("finished printing buffer data")
+            t = sample['time']-self.buffer[0]['time']
+            recorded_data['samples'][str(t)] = sample.get('tracker_1')
+
+        # Save to file
+        today = datetime.today()
+        slate_file = f"{recorded_data['slate']}.tk{recorded_data['take']}"
+        path = f"{file_path}/{today.year}{str(today.month).zfill(2)}" \
+               f"{str(today.day).zfill(2)}_{slate_file}.json"
+
+        print(f"\tSaving recorded data:\t{path}")
+        save_dict_to_file(recorded_data, path)
 
         self.buffer = []
-        print("cleared buffer")
 
     def add_sample(self, sample):
         self.buffer.append(sample)

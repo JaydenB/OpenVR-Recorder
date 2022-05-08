@@ -1,7 +1,15 @@
 import triad_openvr
 import time
+import numpy as np
 
 from PyQt5 import QtCore
+
+
+def matmult_b_to_local_a(a, b):
+    bb = np.array([b[0], b[1], b[2], [0,0,0,1]])
+    new = np.matmul(a, bb)
+    local_b_list = new.tolist()
+    return [local_b_list[0], local_b_list[1], local_b_list[2]]
 
 
 class ListenerWorker(QtCore.QObject):
@@ -18,6 +26,14 @@ class ListenerWorker(QtCore.QObject):
         self.active = False
         self.looping = True
 
+        self.root = np.array([
+            [-0.5815409421920776, 0.8135089874267578, -0.0036786096170544624, -1.8250683546066284],
+            [0.00013452331768348813, -0.004425797611474991, -0.9999902844429016, -0.6333032846450806],
+            [-0.8135173320770264, -0.5815356373786926, 0.0024641845375299454, -1.8179576396942139],
+            [0, 0, 0, 1]
+        ])
+        self.inv_root = np.linalg.inv(self.root)
+
     def start(self):
         print("Starting Listener Thread")
 
@@ -33,7 +49,17 @@ class ListenerWorker(QtCore.QObject):
 
                 poses = dict()
                 for device in self.vr.devices.keys():
-                    poses[device] = self.vr.devices[device].get_pose_euler()
+                    # Standard 3x4 Position Rotation Matrix
+                    m = self.vr.devices[device].get_pose_matrix()
+                    local_m = matmult_b_to_local_a(self.inv_root, m)
+                    # np_m = np.array(m)
+                    # _m = np.matmul(self.root_point, np_m)
+                    poses[device] = {
+                        "raw_matrix": m,
+                        "matrix": local_m,
+                        "euler": triad_openvr.convert_to_euler(local_m),
+                        "quaternion": triad_openvr.convert_to_quaternion(local_m)
+                    }
                 poses["time"] = time.time()
                 self.obtained_sample.emit(poses)
 

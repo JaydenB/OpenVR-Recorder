@@ -162,10 +162,10 @@ class RecorderApplication(QtWidgets.QApplication):
         for sample_device in sample.keys():
             for d in self._tracked_devices:
                 if d.name == sample_device:
-                    pose = sample.get(sample_device, [0, 0, 0, 0, 0, 0])
+                    pose = sample.get(sample_device).get('euler')
                     d.update_pose(pose)
                     if self.recording:
-                        recorded_sample[d.name] = pose
+                        recorded_sample[d.name] = sample.get(sample_device)
         if self.recording:
             self.recorder.add_sample(recorded_sample)
 

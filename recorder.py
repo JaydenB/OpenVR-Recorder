@@ -22,9 +22,9 @@ class Recorder(object):
         print("")
 
         for sample in self.buffer:
-            print("%ssecs - %s" % (
-                round(sample.get("time")-self.buffer[0].get("time"), 2),
-                sample.get("tracker_1")))
+            print(sample.get('tracker_1')['matrix'])
+            # print(f"[{round(sample.get('time')-self.buffer[0].get('time'),2)}]"
+            #       f" {sample.get('tracker_1').get('matrix')}")
         print("finished printing buffer data")
 
         self.buffer = []

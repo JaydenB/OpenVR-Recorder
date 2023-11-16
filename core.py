@@ -117,19 +117,24 @@ class RecorderApplication(QtWidgets.QApplication):
             self.openvr_connect()
 
     def openvr_connect(self):
-        self.connected = True
-        self.ui_widget.update_connected_icon(self.connected)
-
         # self.create_devices(self._vr.devices)
         self.open_connection.emit()
+        if self.listener_worker.vr is None:
+            return
+
+        self.connected = True
+        self.ui_widget.update_connected_icon(self.connected)
 
         print("OpenVR Connected!")
 
     def openvr_disconnect(self):
+        self.close_connection.emit()
+
+        if self.listener_worker.vr is not None:
+            return
+
         self.connected = False
         self.ui_widget.update_connected_icon(self.connected)
-
-        self.close_connection.emit()
 
         self.remove_devices()
         # self._vr = None
@@ -170,13 +175,14 @@ class RecorderApplication(QtWidgets.QApplication):
         # print("Sample: %s" % sample)
         recorded_sample = dict()
         recorded_sample["time"] = sample.get("time", 0.0)
+        self.ui_widget.viewport.update_camera_with_sample(sample)
         for sample_device in sample.keys():
             for d in self._tracked_devices:
                 if d.name == sample_device:
-                    pose = sample.get(sample_device).get('euler')
+                    pose = sample.get(sample_device)
                     d.update_pose(pose)
                     if self.recording:
-                        recorded_sample[d.name] = sample.get(sample_device)
+                        recorded_sample[d.name] = pose
         if self.recording:
             self.recorder.add_sample(recorded_sample)
 

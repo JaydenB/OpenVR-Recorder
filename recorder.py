@@ -37,10 +37,12 @@ class Recorder(object):
             recorded_data['samples'][str(t)] = sample.get('tracker_1')
 
         # Save to file
+        now = datetime.now()
         today = datetime.today()
-        slate_file = f"{recorded_data['slate']}.tk{recorded_data['take']}"
         path = f"{file_path}/{today.year}{str(today.month).zfill(2)}" \
-               f"{str(today.day).zfill(2)}_{slate_file}.json"
+               f"{str(today.day).zfill(2)}_" \
+               f"{str(now.hour).zfill(2)}{str(now.minute).zfill(2)}{str(now.second).zfill(2)}_" \
+               f"{recorded_data['name']}.json"
 
         print(f"\tSaving recorded data:\t{path}")
         save_dict_to_file(recorded_data, path)

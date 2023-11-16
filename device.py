@@ -15,8 +15,11 @@ class TrackedDevice(object):
 
     def update_pose(self, sample):
         """Updates the Device's pose in Euler in the display table"""
+        combined = sample['position']
+        for i in sample['euler']:
+            combined.append(i)
         for column in range(0, 6):
-            display_value = round(sample[column], 4)
+            display_value = round(combined[column], 4)
             self.parent.ui_widget.tb_devices.setItem(
                 self.row, column + 2,
                 QtWidgets.QTableWidgetItem(str(display_value)))

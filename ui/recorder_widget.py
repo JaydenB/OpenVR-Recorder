@@ -1,5 +1,5 @@
 from PyQt5 import QtWidgets, QtCore, QtGui
-import os
+from .viewport_widget import ViewportWidget
 
 
 DEFAULT_FILEPATH = "C:/recordings/steamvr"
@@ -12,7 +12,7 @@ class RecorderWidget(QtWidgets.QWidget):
         self.main_layout = QtWidgets.QVBoxLayout()
         self.setLayout(self.main_layout)
 
-        self.resize(850, 500)
+        self.resize(850, 600)
 
         # -----------------------------------------
         #   Connection
@@ -109,16 +109,38 @@ class RecorderWidget(QtWidgets.QWidget):
         layout_devices.addWidget(self.tb_devices)
 
         # -----------------------------------------
-        #   Collate everything together...
+        #   Live 3D Viewport
         # -----------------------------------------
+
+        # widget_viewport = QtWidgets.QWidget()
+        # layout_viewport = QtWidgets.QVBoxLayout()
+
+        self.viewport = ViewportWidget()
+
+        # layout_viewport.addWidget(self.viewport)
+        # widget_viewport.setLayout(layout_viewport)
+
+        # -----------------------------------------
+        #   Collate everything together with a QSplitter...
+        # -----------------------------------------
+
+        splitter_layout_top = QtWidgets.QVBoxLayout()
+        splitter_widget_top = QtWidgets.QWidget()
 
         layout_top = QtWidgets.QHBoxLayout()
         layout_top.addLayout(layout_other)
         layout_top.addLayout(layout_connection)
 
-        self.main_layout.addLayout(layout_top)
-        self.main_layout.addLayout(layout_recording_settings)
-        self.main_layout.addLayout(layout_devices)
+        splitter_layout_top.addLayout(layout_top)
+        splitter_layout_top.addLayout(layout_recording_settings)
+        splitter_layout_top.addLayout(layout_devices)
+        splitter_widget_top.setLayout(splitter_layout_top)
+
+        splitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Vertical, self)
+        splitter.addWidget(splitter_widget_top)
+        splitter.addWidget(self.viewport)
+
+        self.main_layout.addWidget(splitter)
 
     def update_record_icon(self, state):
         if state:
